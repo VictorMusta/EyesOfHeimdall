@@ -1,68 +1,96 @@
 # EyesOfHeimdall
 
-Interface adaptative qui visualise l'origine des sons dans un jeu, pour compenser
-l'absence de localisation auditive (ITD/ILD) chez une personne n'entendant que
-d'une oreille.
+> *Heimdall entend l'herbe pousser et voit à des centaines de kilomètres. Ce mod prête un peu de ça à quelqu'un qui n'a qu'une oreille.*
 
-## Concept
+Un mod Valheim qui **rend visible la direction des sons** — pour un joueur qui
+n'entend que d'une oreille et n'a donc aucun repère interaural (ITD/ILD) pour
+savoir d'où vient un bruit. Ce n'est pas un radar permanent façon wallhack :
+rien ne s'affiche tant qu'aucun son ne se produit. Chaque son fait apparaître
+un arc bref autour du viseur, dans la bonne direction, avec l'icône réelle de
+la créature qui l'a émis.
 
-- **Core** (`src/EyesOfHeimdall.Core`) : moteur-agnostique. Modèle de "sons actifs"
-  (`SoundRadarModel`) + calcul de direction/distance relative à un auditeur
-  (`DirectionMath`). Ne dépend d'aucun moteur de jeu.
-- **Connecteurs par moteur** : un projet par moteur qui branche Core sur les
-  événements audio réels et dessine l'overlay. Premier connecteur : Valheim.
+## En jeu
 
-## POC actuel : `EyesOfHeimdall.ValheimMod`
+<p align="center">
+  <img src="docs/screenshots/boar-and-greydwarf.webp" width="420" alt="Arc directionnel indiquant un sanglier et un bourgeon nain-gris à proximité">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/troll.webp" width="420" alt="Arc directionnel pendant un combat contre un troll">
+</p>
 
-Mod BepInEx/Harmony pour Valheim (Unity, Mono).
+## Comment ça marche
 
-- Patch sur `ZSFX.Play()` (le système de sound effects du jeu) : à chaque son
-  joué, on capture sa position 3D. La créature source est identifiée via la
-  hiérarchie du son ou, à défaut (effets d'impact non attachés), via la
-  créature vivante la plus proche du point sonore.
-- `Core.SoundRadarModel` garde les sons actifs ~1,5s (fusionnés par créature :
-  plusieurs sons d'une même source ne produisent qu'un seul repère) et les
-  résout en direction/distance par rapport à la caméra du joueur.
-- `RadarOverlay` dessine, façon Fortnite, un arc de cercle bref autour du
-  viseur à chaque son (pas de panneau permanent) avec l'icône réelle du
-  trophée de la créature (extraite de l'atlas d'icônes du jeu). Un son sans
-  trophée connu n'affiche rien plutôt qu'un nom technique.
-- `CreatureCatalog` couvre l'intégralité des créatures du jeu (base +
-  Mistlands/Ashlands/Deep North), chacune avec sa couleur.
+- Un patch [Harmony](https://harmony.pardeike.net/) sur `ZSFX.Play()` (le
+  système de sound effects de Valheim) observe chaque son joué dans le monde
+  — sans jamais modifier le comportement du jeu.
+- La créature à l'origine du son est identifiée via sa hiérarchie, ou, pour
+  les effets d'impact/mort qui ne sont pas attachés à leur source (cas
+  fréquent dans Valheim), via la créature vivante la plus proche du point
+  sonore.
+- Chaque créature du jeu (base + Mistlands/Ashlands/Deep North, ~160
+  entités) est cataloguée avec une couleur, et son **icône de trophée réelle**
+  est extraite de l'atlas d'icônes du jeu pour l'affichage — pas de nom
+  technique, pas de texte : si aucune icône n'est disponible, rien ne
+  s'affiche plutôt qu'un indice bancal.
+- Plusieurs sons d'une même créature (pas, grognement, coup...) fusionnent en
+  un seul repère plutôt que de s'empiler.
+- Le cœur du calcul (direction/distance, cycle de vie des sons affichés) est
+  agnostique du moteur de jeu — le mod Valheim n'est qu'un connecteur
+  au-dessus.
 
-### Build & test
+## Installation (joueur)
 
-Prérequis : SDK .NET, Valheim installé (chemin par défaut dans le `.csproj`,
-override avec `-p:ValheimDir=...`), BepInEx installé dans le dossier du jeu.
+Le mod fonctionne uniquement côté client : inutile que les autres joueurs
+d'une même partie l'aient aussi installé.
+
+1. Installe [BepInEx pour Valheim](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/).
+2. Compile le mod (voir ci-dessous) ou récupère les DLL depuis une release,
+   et place `EyesOfHeimdall.Core.dll` + `EyesOfHeimdall.ValheimMod.dll` dans
+   `<Valheim>/BepInEx/plugins/EyesOfHeimdall/`.
+3. Lance Valheim normalement.
+
+Réglages (générés au premier lancement dans
+`BepInEx/config/com.eyesofheimdall.valheim.cfg`) :
+- `DetectionRangeMeters` — portée de détection (mètres)
+- `HideOwnSounds` — masquer les sons produits par le joueur lui-même (pas, coups...)
+
+## Build (dev)
+
+Prérequis : SDK .NET, Valheim installé, BepInEx installé dans le dossier du
+jeu.
 
 ```bash
 dotnet build src/EyesOfHeimdall.ValheimMod/EyesOfHeimdall.ValheimMod.csproj -c Release
 ```
 
 Le build copie automatiquement le mod dans
-`<Valheim>/BepInEx/plugins/EyesOfHeimdall/` — il suffit de relancer le jeu.
-Logs : `<Valheim>/BepInEx/LogOutput.log`.
+`<Valheim>/BepInEx/plugins/EyesOfHeimdall/` (chemin par défaut dans le
+`.csproj`, override avec `-p:ValheimDir=...`). Logs :
+`<Valheim>/BepInEx/LogOutput.log`.
 
-Réglages (générés au premier lancement dans
-`BepInEx/config/com.eyesofheimdall.valheim.cfg`) : portée de détection,
-masquage des sons produits par le joueur lui-même.
+## Architecture
 
-### Prochaines étapes possibles
+```
+src/
+  EyesOfHeimdall.Core/        agnostique du moteur — modèle de "sons actifs",
+                               calcul direction/distance
+  EyesOfHeimdall.ValheimMod/  connecteur Valheim (BepInEx/Harmony) : patch
+                               ZSFX, catalogue de créatures, rendu overlay
+```
+
+L'idée à terme : un seul cœur, plusieurs connecteurs moteur — Valheim est le
+premier, pas le seul visé.
+
+## Pistes
 
 - Distinguer danger réel (créature hostile en chasse) vs bruit de fond
   (faune passive/fuyante).
 - Retour haptique directionnel (vibration manette asymétrique gauche/droite).
 - Indiquer si un son se rapproche ou s'éloigne dans le temps.
-- Deuxième connecteur moteur (Godot/Unity générique) pour valider que Core
-  tient sa promesse "un seul cœur, plusieurs moteurs".
+- Deuxième connecteur moteur pour valider l'architecture "un cœur, plusieurs
+  moteurs".
 
-## Installateur
+## Origine du projet
 
-Un installateur autonome (DLL compilées + script PowerShell) pour installer
-le mod sur une autre machine sans setup de dev est généré dans `dist/`.
-
-## BMAD
-
-Ce projet a été initialisé et cadré avec BMAD-METHOD (`_bmad/`,
-`.claude/skills/bmad-*`). Le journal de la session de maturation de l'idée est
-dans `_bmad-output/brainstorming/`.
+Cadré et fait mûrir avec [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)
+avant l'implémentation — le journal de la session de brainstorming est dans
+[`_bmad-output/`](_bmad-output/).
