@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AD130A27-897B-4C8E-BF4C-72068D894C4C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EyesOfHeimdall.Core", "src\EyesOfHeimdall.Core\EyesOfHeimdall.Core.csproj", "{19E0B0F6-8FC6-4F95-89C3-EF473C330220}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EyesOfHeimdall.ValheimMod", "src\EyesOfHeimdall.ValheimMod\EyesOfHeimdall.ValheimMod.csproj", "{8E8AB4F5-13FB-4814-A639-4488FCA5965E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{19E0B0F6-8FC6-4F95-89C3-EF473C330220}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19E0B0F6-8FC6-4F95-89C3-EF473C330220}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19E0B0F6-8FC6-4F95-89C3-EF473C330220}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19E0B0F6-8FC6-4F95-89C3-EF473C330220}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E8AB4F5-13FB-4814-A639-4488FCA5965E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E8AB4F5-13FB-4814-A639-4488FCA5965E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E8AB4F5-13FB-4814-A639-4488FCA5965E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E8AB4F5-13FB-4814-A639-4488FCA5965E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{19E0B0F6-8FC6-4F95-89C3-EF473C330220} = {AD130A27-897B-4C8E-BF4C-72068D894C4C}
+		{8E8AB4F5-13FB-4814-A639-4488FCA5965E} = {AD130A27-897B-4C8E-BF4C-72068D894C4C}
+	EndGlobalSection
+EndGlobal

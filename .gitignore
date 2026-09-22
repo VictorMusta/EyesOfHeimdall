@@ -1,0 +1,14 @@
+bin/
+obj/
+
+# Generated installer package — rebuilt from src/ via the install script, not source itself.
+dist/
+
+# Third-party tooling and anything decompiled/copied from the Valheim install —
+# never commit game binaries or decompiled proprietary code.
+tools/
+
+# BMAD-METHOD scaffolding (skills, agents) — reinstalled via `npx bmad-method install`,
+# not project source. The actual brainstorming output we produced stays (_bmad-output/).
+.claude/
+_bmad/
