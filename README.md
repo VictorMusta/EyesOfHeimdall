@@ -42,11 +42,17 @@ la créature qui l'a émis.
 Le mod fonctionne uniquement côté client : inutile que les autres joueurs
 d'une même partie l'aient aussi installé.
 
-1. Installe [BepInEx pour Valheim](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/).
-2. Compile le mod (voir ci-dessous) ou récupère les DLL depuis une release,
-   et place `EyesOfHeimdall.Core.dll` + `EyesOfHeimdall.ValheimMod.dll` dans
-   `<Valheim>/BepInEx/plugins/EyesOfHeimdall/`.
-3. Lance Valheim normalement.
+**Le plus simple** : télécharge le zip de la dernière
+[Release](../../releases/latest), dézippe-le, ferme Valheim s'il est ouvert,
+double-clique `Installer.bat`. Le script trouve Valheim tout seul dans la
+plupart des cas (sinon il demande le chemin), installe
+[BepInEx](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/)
+s'il n'est pas déjà présent, puis dépose le mod. Pour désinstaller :
+`Desinstaller.bat` dans le même dossier.
+
+Les scripts eux-mêmes sont dans [`installer/`](installer/) si tu préfères
+les lire avant de les lancer, ou les adapter — il te faudra alors compiler
+le mod toi-même (voir plus bas) et placer les deux DLL à côté des scripts.
 
 Réglages (générés au premier lancement dans
 `BepInEx/config/com.eyesofheimdall.valheim.cfg`) :
