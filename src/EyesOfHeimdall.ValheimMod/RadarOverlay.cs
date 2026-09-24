@@ -72,7 +72,15 @@ internal static class RadarOverlay
             color.a = alpha;
 
             DrawArc(center, blip.BearingDegrees, angularSpan, color);
-            DrawIcon(center, blip, icon);
+
+            if (Discovery.IsDiscovered(blip.Category))
+            {
+                DrawIcon(center, blip, icon);
+            }
+            else
+            {
+                DrawUndiscovered(center, blip, alpha);
+            }
         }
 
         GUI.color = Color.white;
@@ -176,15 +184,44 @@ internal static class RadarOverlay
 
     // --- Source icon ------------------------------------------------------
 
-    private static void DrawIcon(Vector2 center, SoundBlip blip, Sprite icon)
+    private static Vector2 IconPosition(Vector2 center, SoundBlip blip)
     {
         var angleRad = blip.BearingDegrees * Mathf.Deg2Rad;
         var labelRadius = RingRadius + ArcThickness / 2f + 16f;
-        var pos = center + new Vector2(Mathf.Sin(angleRad), -Mathf.Cos(angleRad)) * labelRadius;
+        return center + new Vector2(Mathf.Sin(angleRad), -Mathf.Cos(angleRad)) * labelRadius;
+    }
+
+    private static void DrawIcon(Vector2 center, SoundBlip blip, Sprite icon)
+    {
+        var pos = IconPosition(center, blip);
         var alpha = Mathf.Clamp01(blip.Freshness) * 0.85f;
 
         GUI.color = new Color(1f, 1f, 1f, alpha);
         DrawSprite(new Rect(pos.x - IconSize / 2f, pos.y - IconSize / 2f, IconSize, IconSize), icon);
+    }
+
+    /// <summary>Creature recognized (category has a trophy) but not yet fought — a deliberate
+    /// "undiscovered" placeholder, not a raw internal name, so it reads as a bestiary entry to fill
+    /// in rather than a broken label.</summary>
+    private static GUIStyle? _undiscoveredStyle;
+
+    private static void DrawUndiscovered(Vector2 center, SoundBlip blip, float arcAlpha)
+    {
+        if (_undiscoveredStyle == null)
+        {
+            _undiscoveredStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                fontSize = 16,
+            };
+        }
+
+        var pos = IconPosition(center, blip);
+        var alpha = Mathf.Clamp01(blip.Freshness) * Mathf.Max(arcAlpha, 0.6f);
+
+        GUI.color = new Color(1f, 1f, 1f, alpha);
+        GUI.Label(new Rect(pos.x - IconSize / 2f, pos.y - IconSize / 2f, IconSize, IconSize), "???", _undiscoveredStyle);
     }
 
     /// <summary>
