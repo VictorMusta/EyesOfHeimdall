@@ -11,13 +11,20 @@ namespace EyesOfHeimdall.ValheimMod;
 internal static class TrophyIcons
 {
     private static readonly Dictionary<string, Sprite?> Cache = new();
+    private static readonly Dictionary<string, int> FailedAttempts = new();
 
     /// <summary>
-    /// Cached by category, not by exact creature: some family members (e.g. Greyling) drop no
-    /// trophy of their own, but share a category with one that does (Greydwarf) — so a successful
-    /// resolution "sticks" for the whole category, while a miss keeps retrying on the next
-    /// creature of that category instead of permanently locking it to "no icon".
+    /// Some family members (e.g. Greyling) drop no trophy of their own, but share a category with
+    /// one that does (Greydwarf) — so a successful resolution "sticks" for the whole category,
+    /// while a miss retries on the next creature of that category instead of permanently locking
+    /// it to "no icon". BUT retries are capped: a category like "player" will *never* resolve (no
+    /// Character has a trophy of its own) — without a cap this call, made on every single sound
+    /// attributed to that category, retries and logs forever. This previously flooded the log with
+    /// tens of thousands of lines in a single session, which is a real suspect for the instability
+    /// reported after a long co-op session — bounding it keeps the worst case at a handful of tries.
     /// </summary>
+    private const int MaxAttemptsPerCategory = 5;
+
     public static void EnsureCached(string category, Character character)
     {
         if (Cache.TryGetValue(category, out var existing) && existing != null)
@@ -25,10 +32,21 @@ internal static class TrophyIcons
             return;
         }
 
+        if (FailedAttempts.TryGetValue(category, out var attempts) && attempts >= MaxAttemptsPerCategory)
+        {
+            return;
+        }
+
         var resolved = ResolveTrophySprite(character);
-        if (resolved != null || !Cache.ContainsKey(category))
+        if (resolved != null)
         {
             Cache[category] = resolved;
+            FailedAttempts.Remove(category);
+        }
+        else
+        {
+            Cache[category] = null;
+            FailedAttempts[category] = attempts + 1;
         }
     }
 
@@ -42,11 +60,8 @@ internal static class TrophyIcons
         var drop = character.GetComponent<CharacterDrop>();
         if (drop == null)
         {
-            Plugin.Log.LogInfo($"[TrophyIcons] {character.gameObject.name}: no CharacterDrop component");
             return null;
         }
-
-        Plugin.Log.LogInfo($"[TrophyIcons] {character.gameObject.name}: drops = [{string.Join(", ", drop.m_drops.Select(d => d.m_prefab == null ? "<null>" : d.m_prefab.name))}]");
 
         foreach (var entry in drop.m_drops)
         {
@@ -60,17 +75,7 @@ internal static class TrophyIcons
                 continue;
             }
 
-            var itemDrop = entry.m_prefab.GetComponent<ItemDrop>();
-            var icon = itemDrop?.m_itemData?.GetIcon();
-            if (icon != null)
-            {
-                Plugin.Log.LogInfo($"[TrophyIcons] {character.gameObject.name}: matched {entry.m_prefab.name}, packed={icon.packed}, packingMode={icon.packingMode}, packingRotation={icon.packingRotation}, rect={icon.rect}, textureRect={icon.textureRect}, texture={icon.texture.name} {icon.texture.width}x{icon.texture.height}");
-            }
-            else
-            {
-                Plugin.Log.LogInfo($"[TrophyIcons] {character.gameObject.name}: matched {entry.m_prefab.name} but ItemDrop/icon is null (ItemDrop={itemDrop != null})");
-            }
-
+            var icon = entry.m_prefab.GetComponent<ItemDrop>()?.m_itemData?.GetIcon();
             if (icon != null && IsSimpleRect(icon))
             {
                 return icon;
