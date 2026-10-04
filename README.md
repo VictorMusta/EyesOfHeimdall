@@ -58,6 +58,19 @@ Réglages (générés au premier lancement dans
 `BepInEx/config/com.eyesofheimdall.valheim.cfg`) :
 - `DetectionRangeMeters` — portée de détection (mètres)
 - `HideOwnSounds` — masquer les sons produits par le joueur lui-même (pas, coups...)
+- `AutoUpdate` — mise à jour automatique au lancement (activée par défaut)
+
+### Mise à jour automatique
+
+À chaque lancement, le mod interroge la dernière release de ce dépôt. S'il en
+existe une plus récente, il télécharge les DLL, vérifie leur SHA-256 contre le
+manifeste publié, et remplace les fichiers installés (les précédents sont
+gardés en `.bak`). La nouvelle version s'active au lancement suivant. Sans
+internet, ou si quoi que ce soit échoue, rien n'est modifié.
+
+À savoir avant d'installer : cela revient à faire confiance aux releases de ce
+dépôt pour exécuter du code sur ta machine. Si tu préfères mettre à jour à la
+main, passe `AutoUpdate` à `false`.
 
 ## Build (dev)
 
@@ -72,6 +85,17 @@ Le build copie automatiquement le mod dans
 `<Valheim>/BepInEx/plugins/EyesOfHeimdall/` (chemin par défaut dans le
 `.csproj`, override avec `-p:ValheimDir=...`). Logs :
 `<Valheim>/BepInEx/LogOutput.log`.
+
+### Publier une version
+
+1. Incrémenter `Plugin.Version` (source unique du numéro de version),
+   committer, pousser.
+2. `powershell -File scripts/release.ps1 -NotesFile <notes.md> [-Title "..."]`
+
+Le script compile, génère `update-manifest.txt` (version + SHA-256 des DLL),
+assemble le zip d'installation et publie le tout. C'est ce manifeste que les
+copies installées consultent pour se mettre à jour : ne pas publier de release
+à la main sans lui.
 
 ## Architecture
 

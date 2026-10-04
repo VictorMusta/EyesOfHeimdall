@@ -11,7 +11,8 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string Guid = "com.eyesofheimdall.valheim";
     public const string Name = "EyesOfHeimdall";
-    public const string Version = "0.1.0";
+    // Single source of truth for the release tag and the update manifest (see scripts/release.ps1).
+    public const string Version = "0.2.0";
 
     /// <summary>Shared with the static Harmony patch, which has no instance of its own to hold state on.</summary>
     public static SoundRadarModel Radar { get; private set; } = null!;
@@ -25,6 +26,28 @@ public sealed class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Log = Logger;
+
+        // First and on its own: if a game update breaks the patches below, the mod can still fetch its own fix.
+        StartUpdateCheck();
+        Initialize();
+    }
+
+    private void StartUpdateCheck()
+    {
+        var autoUpdate = Config.Bind(
+            "Updates",
+            "AutoUpdate",
+            true,
+            "Au lancement, vérifier s'il existe une version plus récente sur GitHub et l'installer (elle s'active au lancement suivant).");
+
+        if (autoUpdate.Value)
+        {
+            StartCoroutine(AutoUpdater.CheckAndInstall(Path.GetDirectoryName(Info.Location), new System.Version(Version)));
+        }
+    }
+
+    private void Initialize()
+    {
         HideOwnSounds = Config.Bind(
             "Filtering",
             "HideOwnSounds",
@@ -45,7 +68,12 @@ public sealed class Plugin : BaseUnityPlugin
 
     private void OnGUI()
     {
-        RadarOverlay.Draw(Radar);
+        AutoUpdater.DrawNotice();
+
+        if (Radar != null)
+        {
+            RadarOverlay.Draw(Radar);
+        }
     }
 
     /// <summary>

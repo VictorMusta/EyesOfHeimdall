@@ -1,0 +1,41 @@
+EyesOfHeimdall - installation
+================================
+
+Ce dossier installe le mod "EyesOfHeimdall" dans Valheim : des reperes
+visuels qui indiquent la direction et le type des sons proches (creatures,
+etc.) autour du personnage, pour compenser l'absence de localisation auditive.
+
+Installation
+------------
+1. Ferme Valheim s'il est ouvert.
+2. Double-clique sur "Installer.bat".
+3. Une fenetre s'ouvre, l'installation est automatique (elle trouve Valheim
+   toute seule dans la plupart des cas). Si elle ne le trouve pas, elle
+   demandera le chemin du dossier Valheim.
+4. Une fois "Installation terminee !" affiche, relance Valheim normalement.
+
+Ca fonctionne uniquement cote client : pas besoin que les autres joueurs
+d'une meme partie l'aient aussi installe.
+
+Mises a jour
+------------
+A chaque lancement du jeu, le mod regarde s'il existe une version plus
+recente sur GitHub (github.com/VictorMusta/EyesOfHeimdall) et l'installe
+tout seul. La nouvelle version s'active au lancement suivant. Sans
+internet, il ne se passe rien et le mod fonctionne normalement.
+Pour desactiver : AutoUpdate = false dans le fichier de reglages ci-dessous.
+
+En jeu
+------
+- Les reperes apparaissent automatiquement des qu'un son se produit pres de toi.
+- Reglages (apres un premier lancement du jeu, fichier genere automatiquement) :
+  BepInEx/config/com.eyesofheimdall.valheim.cfg
+  - HideOwnSounds : cacher tes propres pas/coups (active par defaut)
+  - DetectionRangeMeters : portee de detection en metres (80 par defaut)
+  - AutoUpdate : mise a jour automatique au lancement (active par defaut)
+
+Pour desinstaller
+------------------
+Double-clique sur "Desinstaller.bat". Il retire le mod (et sa config), et
+demande si tu veux aussi retirer BepInEx entierement (a faire seulement si
+tu n'as pas d'autres mods installes).
