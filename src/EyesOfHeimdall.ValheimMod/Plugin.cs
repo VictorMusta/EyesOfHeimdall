@@ -31,24 +31,6 @@ public sealed class Plugin : BaseUnityPlugin
 
     private void StartUpdateCheck()
     {
-        // TEMP-SELFTEST (not for commit): does Unity's Mono verify RSA signatures like .NET does?
-        try
-        {
-            var dir = @"C:\Users\victo\AppData\Local\Temp\claude\D--Dev-perso-WhereSoundComes\fa4256a8-0608-494b-af96-44d4f6459843\scratchpad\sigtest";
-            var bytes = File.ReadAllBytes(Path.Combine(dir, "sample-manifest.txt"));
-            var sig = File.ReadAllText(Path.Combine(dir, "sample-manifest.txt.sig"));
-            var forged = File.ReadAllText(Path.Combine(dir, "sample-forged.sig"));
-            var tampered = (byte[])bytes.Clone();
-            tampered[8] ^= 1;
-            var badSig = Convert.FromBase64String(sig);
-            badSig[100] ^= 1;
-            Log.LogInfo($"[SELFTEST] genuine={UpdateSignature.IsValid(bytes, sig)} tamperedManifest={UpdateSignature.IsValid(tampered, sig)} tamperedSig={UpdateSignature.IsValid(bytes, Convert.ToBase64String(badSig))} otherKey={UpdateSignature.IsValid(bytes, forged)} garbage={UpdateSignature.IsValid(bytes, "nope")} shortSig={UpdateSignature.IsValid(bytes, Convert.ToBase64String(new byte[16]))}");
-        }
-        catch (Exception e)
-        {
-            Log.LogError($"[SELFTEST] threw {e}");
-        }
-
         ModSettings.AutoUpdate = Config.Bind(
             "Updates",
             "AutoUpdate",
@@ -75,27 +57,38 @@ public sealed class Plugin : BaseUnityPlugin
         Logger.LogInfo($"{Name} {Version} loaded — listening for ZSFX.Play()");
     }
 
+    private bool _drawingFailed;
+
     private void OnGUI()
     {
         AutoUpdater.DrawNotice();
 
-        // Null when Initialize failed: only the updater is alive then, nothing below is safe to draw.
-        if (Radar == null)
+        // Radar is null when Initialize failed: only the updater is alive then, nothing below is safe to draw.
+        if (Radar == null || _drawingFailed)
         {
             return;
         }
 
-        if (ModSettings.Enabled.Value)
+        try
         {
-            RadarOverlay.Draw(Radar);
-
-            if (SettingsPanel.IsOpen)
+            if (ModSettings.Enabled.Value)
             {
-                RadarOverlay.DrawPreview();
-            }
-        }
+                RadarOverlay.Draw(Radar);
 
-        SettingsPanel.Draw(Config);
+                if (SettingsPanel.IsOpen)
+                {
+                    RadarOverlay.DrawPreview();
+                }
+            }
+
+            SettingsPanel.Draw(Config);
+        }
+        catch (Exception e) when (e is not UnityEngine.ExitGUIException)
+        {
+            // OnGUI runs several times per frame: an error repeated at that rate floods the log for the whole session.
+            _drawingFailed = true;
+            Logger.LogError($"Drawing disabled until the next launch after an error: {e}");
+        }
     }
 
     /// <summary>

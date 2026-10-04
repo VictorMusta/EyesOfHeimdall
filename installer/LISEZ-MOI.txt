@@ -23,16 +23,22 @@ A chaque lancement du jeu, le mod regarde s'il existe une version plus
 recente sur GitHub (github.com/VictorMusta/EyesOfHeimdall) et l'installe
 tout seul. La nouvelle version s'active au lancement suivant. Sans
 internet, il ne se passe rien et le mod fonctionne normalement.
-Pour desactiver : AutoUpdate = false dans le fichier de reglages ci-dessous.
+Pour desactiver : decoche "Mise a jour automatique" dans les options du mod.
 
 En jeu
 ------
 - Les reperes apparaissent automatiquement des qu'un son se produit pres de toi.
-- Reglages (apres un premier lancement du jeu, fichier genere automatiquement) :
+- Options : un bouton "EyesOfHeimdall" apparait a gauche de l'ecran-titre et
+  du menu pause (touche Echap). Il permet :
+  - d'afficher ou de masquer les reperes sans desinstaller le mod
+  - de cacher tes propres pas/coups
+  - de regler la portee de detection, la taille du cercle, la taille des
+    icones et l'opacite des arcs
+  - de gerer le bestiaire : "???" tant qu'un type de creature n'a pas ete
+    frappe, et remise a zero pour une nouvelle partie
+  - d'activer ou non la mise a jour automatique
+- Les memes reglages sont enregistres dans le fichier
   BepInEx/config/com.eyesofheimdall.valheim.cfg
-  - HideOwnSounds : cacher tes propres pas/coups (active par defaut)
-  - DetectionRangeMeters : portee de detection en metres (80 par defaut)
-  - AutoUpdate : mise a jour automatique au lancement (active par defaut)
 
 Pour desinstaller
 ------------------

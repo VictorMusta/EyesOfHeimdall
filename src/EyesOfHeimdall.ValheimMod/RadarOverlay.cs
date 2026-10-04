@@ -6,14 +6,10 @@ namespace EyesOfHeimdall.ValheimMod;
 // Brief pings around the crosshair, drawn only while a sound is active: no permanent HUD panel.
 internal static class RadarOverlay
 {
-    private const float ArcThickness = 24f;
     private const float MinAngularSpan = 16f;
     private const float MaxAngularSpan = 46f;
     private const float FarAlphaRatio = 0.24f;
     private const int AngularSpanBuckets = 8;
-    private const float RadialSoftness = 1.5f;
-    private const float AngularSoftnessRad = 0.03f;
-    private const int TexturePadding = 2;
 
     private static readonly Dictionary<int, Texture2D> ArcTextures = new();
     private static float _arcTexturesRadius;
@@ -90,7 +86,7 @@ internal static class RadarOverlay
 
         var iconSize = ModSettings.IconSize.Value;
         var angle = bearingDegrees * Mathf.Deg2Rad;
-        var iconCenter = center + new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle)) * (radius + ArcThickness / 2f + iconSize / 2f);
+        var iconCenter = center + new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle)) * (radius + ArcShape.Thickness / 2f + iconSize / 2f);
         var iconRect = new Rect(iconCenter.x - iconSize / 2f, iconCenter.y - iconSize / 2f, iconSize, iconSize);
 
         if (icon != null && (!ModSettings.HideUndiscovered.Value || Discovery.IsDiscovered(category)))
@@ -128,7 +124,7 @@ internal static class RadarOverlay
 
         GUI.color = color;
         GUIUtility.RotateAroundPivot(bearingDegrees, center);
-        GUI.DrawTexture(new Rect(center.x - tex.width / 2f, center.y - (radius + ArcThickness / 2f + TexturePadding), tex.width, tex.height), tex);
+        GUI.DrawTexture(new Rect(center.x - tex.width / 2f, center.y - (radius + ArcShape.Thickness / 2f + ArcShape.Padding), tex.width, tex.height), tex);
         GUI.matrix = savedMatrix;
     }
 
@@ -155,30 +151,13 @@ internal static class RadarOverlay
         return tex;
     }
 
-    // Only the arc's bounding box is baked, not the whole ring: cheap enough to rebuild live while a slider moves.
     private static Texture2D BuildArcTexture(float spanDegrees, float radius)
     {
-        var outer = radius + ArcThickness / 2f;
-        var inner = radius - ArcThickness / 2f;
-        var halfSpan = spanDegrees * 0.5f * Mathf.Deg2Rad;
-        var reach = halfSpan + AngularSoftnessRad;
-
-        var width = Mathf.CeilToInt(2f * outer * Mathf.Sin(reach)) + 2 * TexturePadding;
-        width += width % 2; // even width keeps texels on whole screen pixels when centred
-        var height = Mathf.CeilToInt(outer - inner * Mathf.Cos(reach)) + 2 * TexturePadding;
-
-        var pixels = new Color[width * height];
-        for (var py = 0; py < height; py++)
+        var alpha = ArcShape.Alpha(spanDegrees, radius, out var width, out var height);
+        var pixels = new Color[alpha.Length];
+        for (var i = 0; i < alpha.Length; i++)
         {
-            // Texture row 0 is the bottom one; y is the upward distance from the ring's centre.
-            var y = outer + TexturePadding - height + py + 0.5f;
-            for (var px = 0; px < width; px++)
-            {
-                var x = px + 0.5f - width / 2f;
-                var alpha = SmoothBand(Mathf.Sqrt(x * x + y * y), inner, outer, RadialSoftness)
-                    * SmoothSpan(Mathf.Atan2(x, y), halfSpan, AngularSoftnessRad);
-                pixels[py * width + px] = new Color(1f, 1f, 1f, alpha);
-            }
+            pixels[i] = new Color(1f, 1f, 1f, alpha[i]);
         }
 
         var tex = new Texture2D(width, height, TextureFormat.RGBA32, false)
@@ -189,18 +168,6 @@ internal static class RadarOverlay
         tex.SetPixels(pixels);
         tex.Apply();
         return tex;
-    }
-
-    private static float SmoothBand(float value, float lo, float hi, float softness)
-    {
-        var rising = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(lo - softness, lo + softness, value));
-        var falling = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(hi - softness, hi + softness, value));
-        return Mathf.Min(rising, falling);
-    }
-
-    private static float SmoothSpan(float angle, float halfSpan, float softness)
-    {
-        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(halfSpan - softness, halfSpan + softness, Mathf.Abs(angle)));
     }
 
     // Icons live in a shared atlas: textureRect is the sprite's place in it (sprite.rect is local and always starts at 0,0).

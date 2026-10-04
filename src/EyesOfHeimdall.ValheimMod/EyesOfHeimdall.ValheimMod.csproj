@@ -78,7 +78,7 @@
   <!-- Copy the built plugin (and its own dependencies, e.g. EyesOfHeimdall.Core.dll) into the
        game's plugins folder so it's playtest-ready after every build. Game/BepInEx assemblies are
        marked Private=false above so they never end up in this output to begin with. -->
-  <Target Name="DeployPlugin" AfterTargets="Build">
+  <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(SkipDeploy)' != 'true'">
     <ItemGroup>
       <DeployFiles Include="$(OutputPath)*.dll" />
       <DeployFiles Include="$(OutputPath)*.pdb" />

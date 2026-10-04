@@ -47,7 +47,10 @@ $head = git rev-parse HEAD
 if ($head -ne (git rev-parse '@{u}')) { throw 'HEAD is not pushed: push first, the tag is created on the remote.' }
 if (git tag --list $tag) { throw "Tag $tag already exists: bump Plugin.Version." }
 
-dotnet build $project -c Release --no-incremental
+# The build normally copies the plugin into the local game folder too: never under a running game.
+$gameRunning = [bool](Get-Process valheim -ErrorAction SilentlyContinue)
+if ($gameRunning) { Write-Host 'Valheim is running: its plugin folder is left untouched. Rebuild once the game is closed to refresh the local copy.' }
+dotnet build $project -c Release --no-incremental "-p:SkipDeploy=$gameRunning"
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 
 $stage = Join-Path $root 'dist/release'

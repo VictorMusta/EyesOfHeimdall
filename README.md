@@ -54,23 +54,37 @@ Les scripts eux-mêmes sont dans [`installer/`](installer/) si tu préfères
 les lire avant de les lancer, ou les adapter — il te faudra alors compiler
 le mod toi-même (voir plus bas) et placer les deux DLL à côté des scripts.
 
-Réglages (générés au premier lancement dans
-`BepInEx/config/com.eyesofheimdall.valheim.cfg`) :
-- `DetectionRangeMeters` — portée de détection (mètres)
-- `HideOwnSounds` — masquer les sons produits par le joueur lui-même (pas, coups...)
-- `AutoUpdate` — mise à jour automatique au lancement (activée par défaut)
+### Options
+
+Un bouton **EyesOfHeimdall** apparaît sur le bord gauche de l'écran-titre et
+du menu pause (Échap). Il ouvre un panneau de réglages, avec un aperçu en
+direct des arcs autour du viseur :
+
+- afficher ou masquer les repères sonores, sans désinstaller le mod ;
+- cacher ses propres sons (pas, coups...) ;
+- portée de détection, taille du cercle, taille des icônes, opacité des arcs ;
+- bestiaire : afficher « ??? » tant qu'un type de créature n'a pas été frappé,
+  et le remettre à zéro pour une nouvelle partie ;
+- mise à jour automatique.
+
+Les mêmes réglages sont enregistrés dans
+`BepInEx/config/com.eyesofheimdall.valheim.cfg` et restent modifiables à la
+main.
 
 ### Mise à jour automatique
 
-À chaque lancement, le mod interroge la dernière release de ce dépôt. S'il en
-existe une plus récente, il télécharge les DLL, vérifie leur SHA-256 contre le
-manifeste publié, et remplace les fichiers installés (les précédents sont
-gardés en `.bak`). La nouvelle version s'active au lancement suivant. Sans
-internet, ou si quoi que ce soit échoue, rien n'est modifié.
+Une dizaine de secondes après le lancement du jeu, le mod consulte la dernière
+release de ce dépôt (une seule petite requête). S'il en existe une plus
+récente, il vérifie que son manifeste est **signé avec la clé de publication
+du projet** (clé publique embarquée dans le mod, clé privée absente de
+GitHub), télécharge les DLL, contrôle leur SHA-256, puis remplace les fichiers
+installés (les précédents sont gardés en `.bak`). La nouvelle version s'active
+au lancement suivant. Sans internet, ou si quoi que ce soit échoue, rien n'est
+modifié.
 
-À savoir avant d'installer : cela revient à faire confiance aux releases de ce
-dépôt pour exécuter du code sur ta machine. Si tu préfères mettre à jour à la
-main, passe `AutoUpdate` à `false`.
+À savoir avant d'installer : cela revient à faire confiance à l'auteur du mod
+pour exécuter du code sur ta machine. Si tu préfères mettre à jour à la main,
+décoche « Mise à jour automatique » dans les options.
 
 ## Build (dev)
 
@@ -93,9 +107,16 @@ Le build copie automatiquement le mod dans
 2. `powershell -File scripts/release.ps1 -NotesFile <notes.md> [-Title "..."]`
 
 Le script compile, génère `update-manifest.txt` (version + SHA-256 des DLL),
-assemble le zip d'installation et publie le tout. C'est ce manifeste que les
-copies installées consultent pour se mettre à jour : ne pas publier de release
-à la main sans lui.
+le signe (`update-manifest.txt.sig`), assemble le zip d'installation et publie
+le tout. C'est ce manifeste signé que les copies installées consultent pour se
+mettre à jour : ne pas publier de release à la main sans lui.
+
+La clé privée de signature vit hors du dépôt, dans
+`%USERPROFILE%\.eyesofheimdall\release-signing-key.xml` (créée une fois avec
+`scripts/new-signing-key.ps1`). **Elle est à sauvegarder** : les copies
+installées n'acceptent que les mises à jour signées par elle, donc la perdre
+oblige à réinstaller le mod à la main partout. Un fork doit générer sa propre
+clé et remplacer la clé publique dans `UpdateSignature.cs`.
 
 ## Architecture
 
