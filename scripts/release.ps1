@@ -17,6 +17,7 @@ $project = 'src/EyesOfHeimdall.ValheimMod/EyesOfHeimdall.ValheimMod.csproj'
 $buildDir = 'src/EyesOfHeimdall.ValheimMod/bin/Release/net472'
 $dlls = 'EyesOfHeimdall.Core.dll', 'EyesOfHeimdall.ValheimMod.dll'
 $manifestName = 'update-manifest.txt'
+$keyPath = Join-Path $env:USERPROFILE '.eyesofheimdall\release-signing-key.xml'
 
 if (-not (Test-Path $NotesFile)) { throw "Notes file not found: $NotesFile" }
 $NotesFile = (Resolve-Path $NotesFile).Path
@@ -28,6 +29,16 @@ $version = $Matches[1]
 if (([version]$version).ToString() -ne $version) { throw "Plugin.Version '$version' is not in canonical form" }
 $tag = "v$version"
 if (-not $Title) { $Title = $tag }
+
+# Installed copies reject any manifest not signed by the key whose public half they embed.
+# Publishing with another key would silently strand them, so never generate a new key to get past this.
+if (-not (Test-Path $keyPath)) { throw "Signing key not found at $keyPath. Restore it from its backup: installed copies accept no other key." }
+$rsa = New-Object System.Security.Cryptography.RSACng
+$rsa.FromXmlString([IO.File]::ReadAllText($keyPath))
+$publicModulus = [Convert]::ToBase64String($rsa.ExportParameters($false).Modulus)
+if (-not (Get-Content 'src/EyesOfHeimdall.ValheimMod/UpdateSignature.cs' -Raw).Contains("`"$publicModulus`"")) {
+    throw 'The signing key does not match the public key embedded in UpdateSignature.cs.'
+}
 
 if (git status --porcelain) { throw 'Working tree is not clean: commit first, the release must match a commit.' }
 git fetch origin --tags --quiet
@@ -50,29 +61,41 @@ foreach ($dll in $dlls) {
     $manifestLines += "$dll=$hash"
 }
 $manifest = Join-Path $stage $manifestName
-# No BOM: the mod parses this file as plain key=value lines.
+# No BOM, and only version + "<name>.dll=<sha256>" lines: copies as old as 0.2.0 reject any other line.
 [IO.File]::WriteAllLines($manifest, $manifestLines, (New-Object Text.UTF8Encoding($false)))
+
+$signature = "$manifest.sig"
+$signatureBytes = $rsa.SignData([IO.File]::ReadAllBytes($manifest), [Security.Cryptography.HashAlgorithmName]::SHA256, [Security.Cryptography.RSASignaturePadding]::Pkcs1)
+[IO.File]::WriteAllText($signature, [Convert]::ToBase64String($signatureBytes))
+$rsa.Dispose()
 
 $zip = Join-Path $stage "EyesOfHeimdall-$tag.zip"
 $zipContent = @(Get-ChildItem 'installer' -File | ForEach-Object { $_.FullName }) + ($dlls | ForEach-Object { Join-Path $stage $_ })
 Compress-Archive -Path $zipContent -DestinationPath $zip
 
-$assets = @($zip, $manifest) + ($dlls | ForEach-Object { Join-Path $stage $_ })
+$assets = @($zip, $manifest, $signature) + ($dlls | ForEach-Object { Join-Path $stage $_ })
 gh release create $tag @assets --target $head --title $Title --notes-file $NotesFile
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 
-# What installed copies will actually fetch must be exactly what was just built.
-$published = Join-Path $stage 'published-manifest.txt'
-$expected = (Get-FileHash $manifest -Algorithm SHA256).Hash
+# What installed copies will actually fetch must be exactly what was just built and signed.
+$live = @{
+    "$repoUrl/releases/latest/download/$manifestName"   = $manifest
+    "$repoUrl/releases/download/$tag/$manifestName.sig" = $signature
+}
 for ($attempt = 1; $attempt -le 5; $attempt++) {
-    try {
-        Invoke-WebRequest "$repoUrl/releases/latest/download/$manifestName" -OutFile $published -UseBasicParsing
-        if ((Get-FileHash $published -Algorithm SHA256).Hash -eq $expected) {
-            Write-Host "Released $tag - update manifest is live."
-            exit 0
+    $matching = 0
+    foreach ($url in $live.Keys) {
+        try {
+            $published = Join-Path $stage 'published.tmp'
+            Invoke-WebRequest $url -OutFile $published -UseBasicParsing
+            if ((Get-FileHash $published -Algorithm SHA256).Hash -eq (Get-FileHash $live[$url] -Algorithm SHA256).Hash) { $matching++ }
+        } catch {
         }
-    } catch {
+    }
+    if ($matching -eq $live.Count) {
+        Write-Host "Released $tag - signed update manifest is live."
+        exit 0
     }
     Start-Sleep -Seconds 5
 }
-throw "Release $tag was published, but the 'latest' update manifest does not match it. Check the release assets on GitHub."
+throw "Release $tag was published, but the live update manifest or its signature does not match it. Check the release assets on GitHub."

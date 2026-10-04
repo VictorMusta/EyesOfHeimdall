@@ -16,12 +16,12 @@ internal static class ZSFXPatch
 {
     private static void Postfix(ZSFX __instance)
     {
-        if (Player.m_localPlayer == null)
+        if (Player.m_localPlayer == null || !ModSettings.Enabled.Value)
         {
             return;
         }
 
-        if (Plugin.HideOwnSounds.Value && IsPlayerCreator(__instance))
+        if (ModSettings.HideOwnSounds.Value && IsPlayerCreator(__instance))
         {
             return;
         }

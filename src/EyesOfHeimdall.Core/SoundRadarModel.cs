@@ -15,15 +15,14 @@ public sealed class SoundRadarModel
     private readonly List<SoundBlip> _blipsBuffer = new();
 
     private readonly float _maxAgeSeconds;
-    private readonly float _maxDistance;
 
     public SoundRadarModel(float maxAgeSeconds = 3f, float maxDistance = 40f)
     {
         _maxAgeSeconds = maxAgeSeconds;
-        _maxDistance = maxDistance;
+        MaxDistance = maxDistance;
     }
 
-    public float MaxDistance => _maxDistance;
+    public float MaxDistance { get; set; }
 
     /// <summary>
     /// A sound with a known SourceId replaces any existing event from that same source (refreshing
@@ -65,7 +64,7 @@ public sealed class SoundRadarModel
         foreach (var e in _events)
         {
             var (bearing, distance) = DirectionMath.Resolve(listenerPosition, listenerForward, listenerRight, e.WorldPosition);
-            if (distance > _maxDistance)
+            if (distance > MaxDistance)
             {
                 continue;
             }

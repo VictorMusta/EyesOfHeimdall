@@ -14,10 +14,34 @@ internal static class Discovery
 
     private static string FilePath => Path.Combine(BepInEx.Paths.ConfigPath, "eyesofheimdall.discovered.txt");
 
+    public static int Count
+    {
+        get
+        {
+            EnsureLoaded();
+            return DiscoveredCategories.Count;
+        }
+    }
+
     public static bool IsDiscovered(string category)
     {
         EnsureLoaded();
         return DiscoveredCategories.Contains(category);
+    }
+
+    public static void Reset()
+    {
+        _loaded = true;
+        DiscoveredCategories.Clear();
+
+        try
+        {
+            File.Delete(FilePath);
+        }
+        catch (Exception e)
+        {
+            Plugin.Log.LogWarning($"[Discovery] Bestiary cleared for this session, but its file could not be deleted: {e.Message}");
+        }
     }
 
     public static void MarkDiscovered(string category)
